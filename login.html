@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تسجيل الدخول / إنشاء حساب</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: #f0f0f0;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 350px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .tab {
+      padding: 0.5rem 1.5rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-weight: bold;
+      color: #666;
+      user-select: none;
+    }
+    .tab.active {
+      border-bottom-color: #4caf50;
+      color: #4caf50;
+    }
+    form {
+      display: none;
+      flex-direction: column;
+    }
+    form.active {
+      display: flex;
+    }
+    input {
+      margin-bottom: 1rem;
+      padding: 0.7rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 0.7rem;
+      font-size: 1rem;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    button.enabled {
+      opacity: 1;
+    }
+    .error {
+      color: red;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="tabs">
+      <div id="loginTab" class="tab active">تسجيل الدخول</div>
+      <div id="signupTab" class="tab">إنشاء حساب</div>
+    </div>
+
+    <form id="loginForm" class="active">
+      <input id="loginUsername" type="text" placeholder="اسم المستخدم" autocomplete="off" required />
+      <input id="loginPassword" type="password" placeholder="كلمة المرور" autocomplete="off" required />
+      <div id="loginError" class="error"></div>
+      <button id="loginBtn" disabled>دخول</button>
+    </form>
+
+    <form id="signupForm">
+      <input id="signupUsername" type="text" placeholder="اسم المستخدم" autocomplete="off" required />
+      <input id="signupPassword" type="password" placeholder="كلمة المرور" autocomplete="off" required />
+      <input id="signupPasswordConfirm" type="password" placeholder="تأكيد كلمة المرور" autocomplete="off" required />
+      <div id="signupError" class="error"></div>
+      <button id="signupBtn" disabled>إنشاء حساب</button>
+    </form>
+  </div>
+
+  <script>
+    const loginTab = document.getElementById("loginTab");
+    const signupTab = document.getElementById("signupTab");
+    const loginForm = document.getElementById("loginForm");
+    const signupForm = document.getElementById("signupForm");
+
+    const loginUsername = document.getElementById("loginUsername");
+    const loginPassword = document.getElementById("loginPassword");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginError = document.getElementById("loginError");
+
+    const signupUsername = document.getElementById("signupUsername");
+    const signupPassword = document.getElementById("signupPassword");
+    const signupPasswordConfirm = document.getElementById("signupPasswordConfirm");
+    const signupBtn = document.getElementById("signupBtn");
+    const signupError = document.getElementById("signupError");
+
+    // تبديل التبويبات
+    loginTab.addEventListener("click", () => {
+      loginTab.classList.add("active");
+      signupTab.classList.remove("active");
+      loginForm.classList.add("active");
+      signupForm.classList.remove("active");
+      clearErrors();
+    });
+
+    signupTab.addEventListener("click", () => {
+      signupTab.classList.add("active");
+      loginTab.classList.remove("active");
+      signupForm.classList.add("active");
+      loginForm.classList.remove("active");
+      clearErrors();
+    });
+
+    function clearErrors() {
+      loginError.textContent = "";
+      signupError.textContent = "";
+    }
+
+    function validateSignupInputs() {
+      const valid = 
+        signupUsername.value.trim() !== "" &&
+        signupPassword.value.trim() !== "" &&
+        signupPasswordConfirm.value.trim() !== "" &&
+        (signupPassword.value === signupPasswordConfirm.value);
+
+      signupBtn.disabled = !valid;
+      signupBtn.classList.toggle("enabled", valid);
+
+      if (signupPassword.value !== signupPasswordConfirm.value) {
+        signupError.textContent = "كلمتا المرور غير متطابقتين";
+      } else {
+        signupError.textContent = "";
+      }
+    }
+    signupUsername.addEventListener("input", validateSignupInputs);
+    signupPassword.addEventListener("input", validateSignupInputs);
+    signupPasswordConfirm.addEventListener("input", validateSignupInputs);
+
+    function validateLoginInputs() {
+      const valid = loginUsername.value.trim() !== "" && loginPassword.value.trim() !== "";
+      loginBtn.disabled = !valid;
+      loginBtn.classList.toggle("enabled", valid);
+      loginError.textContent = "";
+    }
+    loginUsername.addEventListener("input", validateLoginInputs);
+    loginPassword.addEventListener("input", validateLoginInputs);
+
+    // الحسابات مخزنة في localStorage كمفتاح username
+    function getAccounts() {
+      const accountsStr = localStorage.getItem("accounts");
+      if (!accountsStr) return {};
+      try {
+        return JSON.parse(accountsStr);
+      } catch {
+        return {};
+      }
+    }
+    function saveAccounts(accounts) {
+      localStorage.setItem("accounts", JSON.stringify(accounts));
+    }
+
+    // إنشاء حساب جديد
+    signupForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const accounts = getAccounts();
+      const username = signupUsername.value.trim();
+
+      if (accounts[username]) {
+        signupError.textContent = "اسم المستخدم موجود بالفعل.";
+        return;
+      }
+
+      accounts[username] = {
+        password: signupPassword.value
+      };
+      saveAccounts(accounts);
+
+      alert("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.");
+
+      loginUsername.value = username;
+      loginPassword.value = "";
+      loginTab.click();
+      validateLoginInputs();
+    });
+
+    // تسجيل الدخول
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = loginUsername.value.trim();
+      const password = loginPassword.value;
+
+      const accounts = getAccounts();
+      if (!accounts[username]) {
+        loginError.textContent = "اسم المستخدم غير موجود.";
+        return;
+      }
+      if (accounts[username].password !== password) {
+        loginError.textContent = "كلمة المرور غير صحيحة.";
+        return;
+      }
+
+      // تسجيل الدخول ناجح، حفظ اسم المستخدم في localStorage
+      localStorage.setItem("username", username);
+
+      // الذهاب لصفحة المحادثة
+      window.location.href = "chat.html";
+    });
+  </script>
+</body>
+</html>

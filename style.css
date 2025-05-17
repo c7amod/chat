@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>واتس تيوب</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      direction: rtl;
+      font-family: sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: #4CAF50;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background: #f2f2f2;
+    }
+
+    footer {
+      display: flex;
+      padding: 0.5rem;
+      background: #eee;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 1rem;
+      resize: none;
+    }
+
+    button {
+      margin-right: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+    }
+
+    .message {
+      background: white;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-radius: 5px;
+      position: relative;
+    }
+
+    .options-btn {
+      position: absolute;
+      left: 5px;
+      top: 5px;
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .options-menu {
+      position: absolute;
+      left: 5px;
+      top: 30px;
+      background: #fff;
+      border: 1px solid #ccc;
+      z-index: 10;
+      display: none;
+      flex-direction: column;
+    }
+
+    .options-menu button {
+      padding: 5px;
+      background: none;
+      border: none;
+      text-align: right;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>واتس تيوب</header>
+
+  <div id="chat"></div>
+
+  <footer>
+    <textarea id="messageInput" placeholder="اكتب رسالتك هنا..." rows="1"></textarea>
+    <button id="sendBtn" disabled>إرسال</button>
+  </footer>
+
+  <script>
+    const BIN_ID = "6828583c8a456b79669f8487";
+    const MASTER_KEY = "$2a$10$/wHX1Y2OVv6JWLt9yWdEleT5tlv1ZSRf6.2Z9PUcurDlHdnjmY2Xe";
+
+    const username = localStorage.getItem("username");
+    if (!username) {
+      window.location.href = "login.html";
+    }
+
+    const chatDiv = document.getElementById("chat");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function updateSendBtn() {
+      sendBtn.disabled = messageInput.value.trim().length === 0;
+    }
+    messageInput.addEventListener("input", updateSendBtn);
+
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (!sendBtn.disabled) sendMessage();
+      }
+    });
+
+    async function loadMessages() {
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+          headers: { "X-Master-Key": MASTER_KEY }
+        });
+        const data = await res.json();
+        return data.record.messages || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function displayMessages(messages) {
+      chatDiv.innerHTML = "";
+      messages.forEach((msg, index) => {
+        const div = document.createElement("div");
+        div.className = "message sent";
+        div.innerHTML = `<strong>${msg.sender || "مجهول"}:</strong> ${msg.text}`;
+
+        const optionsBtn = document.createElement("button");
+        optionsBtn.className = "options-btn";
+        optionsBtn.textContent = "…";
+        optionsBtn.title = "خيارات";
+
+        const optionsMenu = document.createElement("div");
+        optionsMenu.className = "options-menu";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.textContent = "نسخ الرسالة";
+        copyBtn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(msg.text);
+            alert("تم نسخ الرسالة!");
+          } catch {
+            alert("تعذر النسخ. جرب من جهاز مختلف.");
+          }
+          optionsMenu.style.display = "none";
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "حذف الرسالة";
+        deleteBtn.addEventListener("click", () => {
+          deleteMessage(index);
+          optionsMenu.style.display = "none";
+        });
+
+        optionsMenu.appendChild(copyBtn);
+        optionsMenu.appendChild(deleteBtn);
+        div.appendChild(optionsBtn);
+        div.appendChild(optionsMenu);
+
+        optionsBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          document.querySelectorAll(".options-menu").forEach(menu => {
+            if (menu !== optionsMenu) menu.style.display = "none";
+          });
+          optionsMenu.style.display = optionsMenu.style.display === "block" ? "none" : "block";
+        });
+
+        document.addEventListener("click", () => {
+          optionsMenu.style.display = "none";
+        });
+
+        chatDiv.appendChild(div);
+      });
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function saveMessages(messages) {
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": MASTER_KEY
+          },
+          body: JSON.stringify({ messages })
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      sendBtn.disabled = true;
+
+      const messages = await loadMessages();
+      messages.push({
+        text,
+        sender: username,
+        timestamp: Date.now()
+      });
+
+      const success = await saveMessages(messages);
+      if (success) {
+        messageInput.value = "";
+        updateSendBtn();
+        displayMessages(messages);
+      } else {
+        alert("حدث خطأ أثناء الإرسال.");
+      }
+
+      sendBtn.disabled = false;
+    }
+
+    async function deleteMessage(index) {
+      const messages = await loadMessages();
+      if (index < 0 || index >= messages.length) return;
+
+      messages.splice(index, 1);
+      const success = await saveMessages(messages);
+      if (success) {
+        displayMessages(messages);
+      } else {
+        alert("حدث خطأ أثناء حذف الرسالة.");
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    async function init() {
+      const messages = await loadMessages();
+      displayMessages(messages);
+
+      setInterval(async () => {
+        const msgs = await loadMessages();
+        displayMessages(msgs);
+      }, 5000);
+    }
+
+    init();
+  </script>
+</body>
+</html>

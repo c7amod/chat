@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>عرض بيانات المستخدمين</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: #f9f9f9;
+      margin: 2rem;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #4caf50;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .no-data {
+      text-align: center;
+      margin-top: 2rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>بيانات المستخدمين المسجلة</h1>
+
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th>اسم المستخدم</th>
+        <th>كلمة المرور</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- هنا سيتم إدخال بيانات المستخدمين -->
+    </tbody>
+  </table>
+
+  <div id="noData" class="no-data" style="display:none;">لا توجد بيانات مستخدمين محفوظة.</div>
+
+  <script>
+    function loadUsers() {
+      const accountsStr = localStorage.getItem("accounts");
+      if (!accountsStr) {
+        document.getElementById("usersTable").style.display = "none";
+        document.getElementById("noData").style.display = "block";
+        return;
+      }
+
+      let accounts;
+      try {
+        accounts = JSON.parse(accountsStr);
+      } catch {
+        accounts = null;
+      }
+
+      if (!accounts || Object.keys(accounts).length === 0) {
+        document.getElementById("usersTable").style.display = "none";
+        document.getElementById("noData").style.display = "block";
+        return;
+      }
+
+      const tbody = document.querySelector("#usersTable tbody");
+      tbody.innerHTML = "";
+
+      for (const username in accounts) {
+        if (accounts.hasOwnProperty(username)) {
+          const tr = document.createElement("tr");
+
+          const tdUser = document.createElement("td");
+          tdUser.textContent = username;
+
+          const tdPass = document.createElement("td");
+          tdPass.textContent = accounts[username].password;
+
+          tr.appendChild(tdUser);
+          tr.appendChild(tdPass);
+
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
+    loadUsers();
+  </script>
+
+</body>
+</html>

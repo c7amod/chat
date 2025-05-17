@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>واتس تيوب - المحادثة</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      direction: rtl;
+      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
+      background: #f5f5f5;
+    }
+    header {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      color: #4caf50;
+      text-align: center;
+    }
+    #chat {
+      background: white;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      height: 400px;
+      overflow-y: auto;
+      border-radius: 6px;
+    }
+    .message {
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      position: relative;
+      background-color: #e0ffe0;
+      word-break: break-word;
+    }
+    .message .sender {
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+    }
+    .message .timestamp {
+      font-size: 0.75rem;
+      color: #777;
+      margin-top: 0.2rem;
+    }
+    .actions {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+    }
+    .actions button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-left: 5px;
+      color: #4caf50;
+    }
+    .actions button:hover {
+      color: #388e3c;
+    }
+    footer {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    textarea#messageInput {
+      flex-grow: 1;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      min-height: 40px;
+    }
+    button#sendBtn {
+      padding: 0 1rem;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button#sendBtn:disabled {
+      background-color: #9ccc9c;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <header>واتس تيوب - المحادثة</header>
+
+  <div id="chat"></div>
+
+  <footer>
+    <textarea id="messageInput" placeholder="اكتب رسالتك هنا..." rows="1"></textarea>
+    <button id="sendBtn" disabled>إرسال</button>
+  </footer>
+
+  <script>
+    const BIN_ID = "6828583c8a456b79669f8487";
+    const MASTER_KEY = "$2a$10$/wHX1Y2OVv6JWLt9yWdEleT5tlv1ZSRf6.2Z9PUcurDlHdnjmY2Xe";
+
+    const chatDiv = document.getElementById("chat");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    const username = localStorage.getItem("username") || "مجهول";
+
+    function updateSendBtn() {
+      sendBtn.disabled = messageInput.value.trim().length === 0;
+    }
+    messageInput.addEventListener("input", updateSendBtn);
+
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (!sendBtn.disabled) sendMessage();
+      }
+    });
+
+    async function loadMessages() {
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+          headers: { "X-Master-Key": MASTER_KEY }
+        });
+        const data = await res.json();
+        return data.record.messages || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function formatTimestamp(ts) {
+      const date = new Date(ts);
+      return date.toLocaleString("ar-EG", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    function createMessageElement(msg, index) {
+      const div = document.createElement("div");
+      div.className = "message";
+
+      // اسم المرسل
+      const sender = document.createElement("div");
+      sender.className = "sender";
+      sender.textContent = msg.username || "مجهول";
+      div.appendChild(sender);
+
+      // نص الرسالة (عادي أو textarea لو في تعديل)
+      if (msg.isEditing) {
+        const textarea = document.createElement("textarea");
+        textarea.value = msg.text;
+        textarea.style.width = "100%";
+        textarea.rows = 3;
+        div.appendChild(textarea);
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "حفظ";
+        saveBtn.style.marginTop = "5px";
+        saveBtn.style.backgroundColor = "#4caf50";
+        saveBtn.style.color = "white";
+        saveBtn.style.border = "none";
+        saveBtn.style.borderRadius = "4px";
+        saveBtn.style.padding = "5px 10px";
+        saveBtn.style.cursor = "pointer";
+
+        saveBtn.onclick = async () => {
+          const newText = textarea.value.trim();
+          if (!newText) {
+            alert("لا يمكن أن تكون الرسالة فارغة.");
+            return;
+          }
+          await updateMessage(index, newText);
+        };
+        div.appendChild(saveBtn);
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.textContent = "إلغاء";
+        cancelBtn.style.marginTop = "5px";
+        cancelBtn.style.marginRight = "10px";
+        cancelBtn.style.backgroundColor = "#f44336";
+        cancelBtn.style.color = "white";
+        cancelBtn.style.border = "none";
+        cancelBtn.style.borderRadius = "4px";
+        cancelBtn.style.padding = "5px 10px";
+        cancelBtn.style.cursor = "pointer";
+
+        cancelBtn.onclick = async () => {
+          cancelEdit(index);
+        };
+        div.appendChild(cancelBtn);
+
+      } else {
+        const textDiv = document.createElement("div");
+        textDiv.textContent = msg.text;
+        div.appendChild(textDiv);
+      }
+
+      // التاريخ
+      const timeDiv = document.createElement("div");
+      timeDiv.className = "timestamp";
+      timeDiv.textContent = formatTimestamp(msg.timestamp);
+      div.appendChild(timeDiv);
+
+      if (!msg.isEditing) {
+        // أزرار تعديل وحذف
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "✏️";
+        editBtn.title = "تعديل الرسالة";
+        editBtn.onclick = () => startEdit(index);
+        actionsDiv.appendChild(editBtn);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "🗑️";
+        deleteBtn.title = "حذف الرسالة";
+        deleteBtn.onclick = () => {
+          if (confirm("هل أنت متأكد أنك تريد حذف هذه الرسالة؟")) {
+            deleteMessage(index);
+          }
+        };
+        actionsDiv.appendChild(deleteBtn);
+
+        div.appendChild(actionsDiv);
+      }
+
+      return div;
+    }
+
+    async function displayMessages(messages) {
+      chatDiv.innerHTML = "";
+      messages.forEach((msg, idx) => {
+        chatDiv.appendChild(createMessageElement(msg, idx));
+      });
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function saveMessages(messages) {
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": MASTER_KEY
+          },
+          body: JSON.stringify({ messages })
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      sendBtn.disabled = true;
+
+      const messages = await loadMessages();
+      messages.push({
+        text,
+        timestamp: Date.now(),
+        username
+      });
+
+      const success = await saveMessages(messages);
+      if (success) {
+        messageInput.value = "";
+        updateSendBtn();
+        displayMessages(messages);
+      } else {
+        alert("حدث خطأ أثناء الإرسال.");
+      }
+
+      sendBtn.disabled = false;
+    }
+
+    // تعديل رسالة (بعد الضغط حفظ)
+    async function updateMessage(index, newText) {
+      const messages = await loadMessages();
+      if (index < 0 || index >= messages.length) return;
+
+      messages[index].text = newText;
+      delete messages[index].isEditing; // الغاء وضع التعديل
+
+      const success = await saveMessages(messages);
+      if (success) {
+        displayMessages(messages);
+      } else {
+        alert("حدث خطأ أثناء تعديل الرسالة.");
+      }
+    }
+
+    // بدء التعديل على رسالة معينة
+    async function startEdit(index) {
+      const messages = await loadMessages();
+      if (index < 0 || index >= messages.length) return;
+
+      messages.forEach((msg, i) => {
+        delete msg.isEditing; // الغاء تعديل الرسائل الأخرى
+      });
+      messages[index].isEditing = true;
+
+      displayMessages(messages);
+    }
+
+    // إلغاء التعديل
+    async function cancelEdit(index) {
+      const messages = await loadMessages();
+      if (index < 0 || index >= messages.length) return;
+
+      delete messages[index].isEditing;
+      displayMessages(messages);
+    }
+
+    async function deleteMessage(index) {
+      const messages = await loadMessages();
+      if (index < 0 || index >= messages.length) return;
+
+      messages.splice(index, 1);
+
+      const success = await saveMessages(messages);
+      if (success) {
+        displayMessages(messages);
+      } else {
+        alert("حدث خطأ أثناء حذف الرسالة.");
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    async function init() {
+      const messages = await loadMessages();
+      displayMessages(messages);
+
+      setInterval(async () => {
+        const msgs = await loadMessages();
+        displayMessages(msgs);
+      }, 5000);
+    }
+
+    init();
+  </script>
+</body>
+</html>
