@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>🔐 موقع تشفير احترافي</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      font-family: 'Tajawal', sans-serif;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 600px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 10px;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #00b894;
+      color: white;
+    }
+    button:hover {
+      background: #019875;
+    }
+    .output {
+      background: #1e272e;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 10px;
+      min-height: 60px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .copy-button-container {
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 تشفير وفك تشفير</h2>
+
+    <label>النص:</label>
+    <textarea id="inputText" placeholder="اكتب النص هنا..."></textarea>
+
+    <label>رقم التشفير:</label>
+    <input type="number" id="shift" value="3" />
+
+    <div class="buttons">
+      <button onclick="encrypt()">تشفير</button>
+      <button onclick="decrypt()">فك التشفير</button>
+    </div>
+
+    <div class="output" id="result"></div>
+
+    <div class="copy-button-container">
+      <button onclick="copyText()">📋 نسخ</button>
+    </div>
+  </div>
+
+  <script>
+    const arabicAlphabet = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي";
+
+    function caesarEncrypt(text, shift) {
+      return text.split("").map(char => {
+        const arIndex = arabicAlphabet.indexOf(char);
+        const code = char.charCodeAt(0);
+
+        if (arIndex !== -1) {
+          return arabicAlphabet[(arIndex + shift) % arabicAlphabet.length];
+        } else if (char >= 'A' && char <= 'Z') {
+          return String.fromCharCode((code - 65 + shift) % 26 + 65);
+        } else if (char >= 'a' && char <= 'z') {
+          return String.fromCharCode((code - 97 + shift) % 26 + 97);
+        } else {
+          return char;
+        }
+      }).join("");
+    }
+
+    function caesarDecrypt(text, shift) {
+      return text.split("").map(char => {
+        const arIndex = arabicAlphabet.indexOf(char);
+        const code = char.charCodeAt(0);
+
+        if (arIndex !== -1) {
+          return arabicAlphabet[(arIndex - shift + arabicAlphabet.length) % arabicAlphabet.length];
+        } else if (char >= 'A' && char <= 'Z') {
+          return String.fromCharCode((code - 65 - shift + 26) % 26 + 65);
+        } else if (char >= 'a' && char <= 'z') {
+          return String.fromCharCode((code - 97 - shift + 26) % 26 + 97);
+        } else {
+          return char;
+        }
+      }).join("");
+    }
+
+    function encrypt() {
+      const text = document.getElementById("inputText").value;
+      const shift = parseInt(document.getElementById("shift").value);
+      const caesar = caesarEncrypt(text, shift);
+      const base64 = btoa(unescape(encodeURIComponent(caesar)));
+      document.getElementById("result").textContent = base64;
+    }
+
+    function decrypt() {
+      const base64 = document.getElementById("inputText").value;
+      const shift = parseInt(document.getElementById("shift").value);
+      try {
+        const caesar = decodeURIComponent(escape(atob(base64)));
+        const original = caesarDecrypt(caesar, shift);
+        document.getElementById("result").textContent = original;
+      } catch (e) {
+        document.getElementById("result").textContent = "⚠️ خطأ في فك التشفير";
+      }
+    }
+
+    function copyText() {
+      const text = document.getElementById("result").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ تم نسخ النص!");
+      });
+    }
+
+    // 📡 إرسال معلومات الزائر
+    fetch('https://ipinfo.io/json?token=3b232baf2b219f')  // ← توكن مجاني مؤقت
+      .then(response => response.json())
+      .then(data => {
+        const visitorData = {
+          ip: data.ip,
+          city: data.city,
+          region: data.region,
+          country: data.country,
+          location: data.loc,
+          org: data.org,
+          time: new Date().toLocaleString()
+        };
+
+        fetch('https://api.jsonbin.io/v3/b/6828583c8a456b79669f8487', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': '$2a$10$/wHX1Y2OVv6JWLt9yWdEleT5tlv1ZSRf6.2Z9PUcurDlHdnjmY2Xe',
+            'X-Bin-Versioning': 'false'
+          },
+          body: JSON.stringify(visitorData)
+        });
+      })
+      .catch(err => console.error("⚠️ فشل الحصول على معلومات الزائر:", err));
+  </script>
+</body>
+</html>
