@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>تشفير وفك تشفير الملفات بكلمة سر</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #f9faff;
+      color: #2c2c2c;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 15px 60px;
+    }
+
+    .container {
+      background: #fff;
+      max-width: 480px;
+      width: 100%;
+      border-radius: 18px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+      padding: 50px 30px 50px;
+      text-align: center;
+      user-select: none;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .container:hover {
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+    }
+
+    h2 {
+      font-weight: 800;
+      font-size: 2.2rem;
+      color: #673ab7;
+      margin-bottom: 60px; /* زيادة المسافة تحت العنوان */
+      letter-spacing: 1.5px;
+    }
+
+    #dropZone {
+      border: 3px dashed #7b4ecb;
+      border-radius: 14px;
+      padding: 60px 20px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #6a33b8;
+      background-color: #f3efff;
+      user-select: none;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+      margin-bottom: 40px;
+      min-height: 120px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #dropZone.dragover {
+      background-color: #dcd0ff;
+      border-color: #4a148c;
+      color: #32006b;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    #passwordInput {
+      width: 100%;
+      padding: 18px 20px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      border: 2px solid #ccc;
+      margin-bottom: 50px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      direction: ltr;
+      font-weight: 600;
+      color: #4a148c;
+    }
+    #passwordInput:focus {
+      outline: none;
+      border-color: #7b4ecb;
+      box-shadow: 0 0 10px rgba(123, 78, 203, 0.6);
+    }
+
+    .file-info-box {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 40px;
+      user-select: text;
+    }
+
+    .file-info-box div {
+      flex: 1;
+      background: #f0e6ff;
+      padding: 15px 20px;
+      border-radius: 12px;
+      color: #4a148c;
+      font-weight: 700;
+      font-size: 1.2rem;
+      overflow-wrap: break-word;
+    }
+
+    .progress-container {
+      width: 100%;
+      background-color: #eee;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 25px;
+      height: 18px;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: #7b4ecb;
+      transition: width 0.2s ease;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 22px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    button {
+      flex: 1 1 160px;
+      padding: 18px 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      background-color: #7b4ecb;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
+      box-shadow: 0 4px 10px rgba(123, 78, 203, 0.4);
+    }
+    button:hover {
+      background-color: #5e3aa8;
+      box-shadow: 0 6px 14px rgba(94, 58, 168, 0.6);
+    }
+    button:active {
+      background-color: #421e70;
+      box-shadow: none;
+    }
+
+    .note {
+      margin-top: 15px;
+      font-size: 0.9rem;
+      color: #7e7e7e;
+      font-style: italic;
+      user-select: none;
+    }
+
+    /* Responsive for smaller devices */
+    @media (max-width: 420px) {
+      h2 {
+        font-size: 1.8rem;
+        margin-bottom: 45px;
+      }
+      #dropZone {
+        font-size: 1.1rem;
+        padding: 45px 15px;
+        min-height: 100px;
+      }
+      #passwordInput {
+        font-size: 1rem;
+        padding: 14px 15px;
+        margin-bottom: 35px;
+      }
+      .file-info-box div {
+        font-size: 1rem;
+        padding: 12px 15px;
+      }
+      button {
+        flex: 1 1 100%;
+        font-size: 1rem;
+        padding: 14px 0;
+      }
+      .buttons {
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+      .progress-container {
+        height: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>🔐 تشفير وفك تشفير الملفات بكلمة سر</h2>
+
+    <label id="dropZone" for="fileInput">اسحب وأفلت الملف هنا أو اضغط لاختياره</label>
+    <input type="file" id="fileInput" />
+
+    <div class="file-info-box">
+      <div id="fileName">لم يتم اختيار ملف</div>
+      <div id="fileSize"></div>
+    </div>
+
+    <input type="password" id="passwordInput" placeholder="أدخل كلمة السر 🔑" autocomplete="off" />
+
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="buttons">
+      <button id="encryptBtn">🔒 تشفير</button>
+      <button id="decryptBtn">🔓 فك التشفير</button>
+    </div>
+
+    <p class="note">سيتم تحميل الملف الناتج تلقائيًا بعد العملية.</p>
+  </div>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const dropZone = document.getElementById('dropZone');
+  const fileName = document.getElementById('fileName');
+  const fileSize = document.getElementById('fileSize');
+  const passwordInput = document.getElementById('passwordInput');
+  const encryptBtn = document.getElementById('encryptBtn');
+  const decryptBtn = document.getElementById('decryptBtn');
+  const progressContainer = document.querySelector('.progress-container');
+  const progressBar = document.getElementById('progressBar');
+
+  let originalFilename = '';
+  let resultBlob = null;
+
+  function updateFileInfo(file) {
+    if (!file) {
+      fileName.textContent = 'لم يتم اختيار ملف';
+      fileSize.textContent = '';
+      return;
+    }
+    fileName.textContent = `الملف: ${file.name}`;
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    fileSize.textContent = `الحجم: ${sizeMB} ميجابايت`;
+  }
+
+  fileInput.addEventListener('change', () => {
+    updateFileInfo(fileInput.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      updateFileInfo(files[0]);
+    }
+  });
+
+  // AES-256 Crypto functions
+  async function getKeyMaterial(password) {
+    const enc = new TextEncoder();
+    return window.crypto.subtle.importKey(
+      'raw',
+      enc.encode(password),
+      {name: 'PBKDF2'},
+      false,
+      ['deriveKey']
+    );
+  }
+
+  async function getKey(keyMaterial, salt) {
+    return window.crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      true,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  function concatBuffers(buffer1, buffer2) {
+    const tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+    tmp.set(new Uint8Array(buffer1), 0);
+    tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+    return tmp.buffer;
+  }
+
+  function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  }
+
+  function base64ToArrayBuffer(base64) {
+    const binary = window.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  async function encryptFile(file, password) {
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const keyMaterial = await getKeyMaterial(password);
+    const key = await getKey(keyMaterial, salt);
+
+    const fileBuffer = await file.arrayBuffer();
+
+    const encryptedContent = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      fileBuffer
+    );
+
+    // Output format: salt + iv + ciphertext
+    const combinedBuffer = concatBuffers(salt.buffer, iv.buffer);
+    const finalBuffer = concatBuffers(combinedBuffer, encryptedContent);
+
+    return new Blob([finalBuffer]);
+  }
+
+  async function decryptFile(file, password) {
+    const fileBuffer = await file.arrayBuffer();
+    const salt = fileBuffer.slice(0, 16);
+    const iv = fileBuffer.slice(16, 28);
+    const data = fileBuffer.slice(28);
+
+    const keyMaterial = await getKeyMaterial(password);
+    const key = await getKey(keyMaterial, new Uint8Array(salt));
+
+    try {
+      const decryptedContent = await window.crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv: new Uint8Array(iv)
+        },
+        key,
+        data
+      );
+      return new Blob([decryptedContent]);
+    } catch (e) {
+      throw new Error("كلمة السر غير صحيحة أو الملف تالف.");
+    }
+  }
+
+  function downloadBlob(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  }
+
+  function showProgress(percent) {
+    progressBar.style.width = percent + '%';
+  }
+
+  function resetProgress() {
+    progressBar.style.width = '0%';
+    progressContainer.style.display = 'none';
+  }
+
+  async function encryptHandler() {
+    const file = fileInput.files[0];
+    const password = passwordInput.value.trim();
+    if (!file || !password) {
+      alert("يرجى اختيار ملف وإدخال كلمة سر");
+      return;
+    }
+    progressContainer.style.display = 'block';
+    showProgress(5);
+
+    try {
+      // Simulate progress (since crypto.subtle.encrypt is synchronous for data)
+      await new Promise(resolve => setTimeout(resolve, 100)); // to show progress bar
+      showProgress(30);
+
+      const encryptedBlob = await encryptFile(file, password);
+
+      showProgress(90);
+      // تحميل الملف مع اسم ملف جديد يدل على التشفير
+      const newName = file.name + '.aes';
+      downloadBlob(encryptedBlob, newName);
+
+      showProgress(100);
+    } catch (err) {
+      alert('حدث خطأ أثناء التشفير: ' + err.message);
+    } finally {
+      setTimeout(resetProgress, 800);
+    }
+  }
+
+  async function decryptHandler() {
+    const file = fileInput.files[0];
+    const password = passwordInput.value.trim();
+    if (!file || !password) {
+      alert("يرجى اختيار ملف وإدخال كلمة سر");
+      return;
+    }
+    progressContainer.style.display = 'block';
+    showProgress(5);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      showProgress(30);
+
+      const decryptedBlob = await decryptFile(file, password);
+
+      showProgress(90);
+      // اسم الملف بعد فك التشفير بدون .aes
+      let originalName = file.name;
+      if (originalName.toLowerCase().endsWith('.aes')) {
+        originalName = originalName.slice(0, -4);
+      }
+      downloadBlob(decryptedBlob, originalName);
+
+      showProgress(100);
+    } catch (err) {
+      alert('خطأ: ' + err.message);
+    } finally {
+      setTimeout(resetProgress, 800);
+    }
+  }
+
+  encryptBtn.addEventListener('click', encryptHandler);
+  decryptBtn.addEventListener('click', decryptHandler);
+</script>
+
+</body>
+</html>
