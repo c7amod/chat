@@ -1,187 +1,267 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🔐 موقع تشفير احترافي</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Attendance</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
     body {
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      font-family: 'Tajawal', sans-serif;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+      max-width: 480px;
+      margin: auto;
     }
-    .container {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 30px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 600px;
+
+    .card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
-    h2 {
-      text-align: center;
+
+    .instructions {
+      background: #e8f0fe;
+      border-left: 4px solid #1a73e8;
+      padding: 12px;
       margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+      border-radius: 0 4px 4px 0;
     }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
     label {
       display: block;
-      margin: 10px 0 5px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 14px;
     }
-    textarea, input {
+
+    input {
       width: 100%;
       padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 15px;
     }
-    .buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 15px;
-    }
+
     button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      background: #00b894;
+      width: 100%;
+      padding: 12px;
+      background: #1a73e8;
       color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
     }
-    button:hover {
-      background: #019875;
+
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
     }
-    .output {
-      background: #1e272e;
-      padding: 15px;
-      margin-top: 10px;
-      border-radius: 10px;
-      min-height: 60px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .copy-button-container {
-      text-align: center;
-      margin-top: 10px;
+
+    #status {
+      margin-top: 15px;
+      font-size: 14px;
+      font-weight: 600;
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h2>🔐 تشفير وفك تشفير</h2>
 
-    <label>النص:</label>
-    <textarea id="inputText" placeholder="اكتب النص هنا..."></textarea>
+<div class="card">
 
-    <label>رقم التشفير:</label>
-    <input type="number" id="shift" value="3" />
+  <div id="studentView">
 
-    <div class="buttons">
-      <button onclick="encrypt()">تشفير</button>
-      <button onclick="decrypt()">فك التشفير</button>
+    <h2 style="margin-top:0;">Attendance</h2>
+
+    <div class="field">
+      <label>Student ID:</label>
+      <input
+        type="text"
+        id="studentId"
+        placeholder="e.g., 20241089"
+        required
+      >
     </div>
 
-    <div class="output" id="result"></div>
-
-    <div class="copy-button-container">
-      <button onclick="copyText()">📋 نسخ</button>
+    <div class="field">
+      <label>Full Name:</label>
+      <input
+        type="text"
+        id="studentName"
+        placeholder="e.g., Alex Johnson"
+        required
+      >
     </div>
+
+    <div class="field">
+      <label>Group Number:</label>
+      <input
+        type="text"
+        id="studentGroup"
+        placeholder="e.g., Group 3 or Section B"
+        required
+      >
+    </div>
+
+    <button id="submitBtn" onclick="submitAttendance()">
+      Submit Attendance
+    </button>
+
+    <div id="status"></div>
+
   </div>
 
-  <script>
-    const arabicAlphabet = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي";
+</div>
 
-    function caesarEncrypt(text, shift) {
-      return text.split("").map(char => {
-        const arIndex = arabicAlphabet.indexOf(char);
-        const code = char.charCodeAt(0);
+<script>
 
-        if (arIndex !== -1) {
-          return arabicAlphabet[(arIndex + shift) % arabicAlphabet.length];
-        } else if (char >= 'A' && char <= 'Z') {
-          return String.fromCharCode((code - 65 + shift) % 26 + 65);
-        } else if (char >= 'a' && char <= 'z') {
-          return String.fromCharCode((code - 97 + shift) % 26 + 97);
-        } else {
-          return char;
-        }
-      }).join("");
+  // Google Apps Script Web App
+  const CENTRAL_SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbzogi-8Ew4FkxT6eEYLNS3KRFnUwhbBnPbRPbTCIZR8CRga4QKZBvtxoABNSac6djuKfg/exec";
+
+
+  // NEW GOOGLE SHEET ID
+  const TARGET_SHEET_ID =
+    "1q3cRSBwjVNN49CrT9cOS63Pf9i2ML8ldFxUgw3lg37s";
+
+
+  function submitAttendance() {
+
+    const status = document.getElementById("status");
+
+    const studentId =
+      document.getElementById("studentId").value.trim();
+
+    const name =
+      document.getElementById("studentName").value.trim();
+
+    const group =
+      document.getElementById("studentGroup").value.trim();
+
+
+    // Check fields
+    if (!studentId || !name || !group) {
+
+      status.textContent =
+        "Please fill in all fields.";
+
+      status.style.color = "red";
+
+      return;
     }
 
-    function caesarDecrypt(text, shift) {
-      return text.split("").map(char => {
-        const arIndex = arabicAlphabet.indexOf(char);
-        const code = char.charCodeAt(0);
 
-        if (arIndex !== -1) {
-          return arabicAlphabet[(arIndex - shift + arabicAlphabet.length) % arabicAlphabet.length];
-        } else if (char >= 'A' && char <= 'Z') {
-          return String.fromCharCode((code - 65 - shift + 26) % 26 + 65);
-        } else if (char >= 'a' && char <= 'z') {
-          return String.fromCharCode((code - 97 - shift + 26) % 26 + 97);
-        } else {
-          return char;
-        }
-      }).join("");
-    }
+    // Request GPS
+    status.textContent =
+      "Recording GPS location...";
 
-    function encrypt() {
-      const text = document.getElementById("inputText").value;
-      const shift = parseInt(document.getElementById("shift").value);
-      const caesar = caesarEncrypt(text, shift);
-      const base64 = btoa(unescape(encodeURIComponent(caesar)));
-      document.getElementById("result").textContent = base64;
-    }
+    status.style.color = "#444";
 
-    function decrypt() {
-      const base64 = document.getElementById("inputText").value;
-      const shift = parseInt(document.getElementById("shift").value);
-      try {
-        const caesar = decodeURIComponent(escape(atob(base64)));
-        const original = caesarDecrypt(caesar, shift);
-        document.getElementById("result").textContent = original;
-      } catch (e) {
-        document.getElementById("result").textContent = "⚠️ خطأ في فك التشفير";
-      }
-    }
 
-    function copyText() {
-      const text = document.getElementById("result").textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        alert("✅ تم نسخ النص!");
-      });
-    }
+    navigator.geolocation.getCurrentPosition(
 
-    // 📡 إرسال معلومات الزائر
-    fetch('https://ipinfo.io/json?token=3b232baf2b219f')  // ← توكن مجاني مؤقت
-      .then(response => response.json())
-      .then(data => {
-        const visitorData = {
-          ip: data.ip,
-          city: data.city,
-          region: data.region,
-          country: data.country,
-          location: data.loc,
-          org: data.org,
-          time: new Date().toLocaleString()
-        };
+      (pos) => {
 
-        fetch('https://api.jsonbin.io/v3/b/6828583c8a456b79669f8487', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': '$2a$10$/wHX1Y2OVv6JWLt9yWdEleT5tlv1ZSRf6.2Z9PUcurDlHdnjmY2Xe',
-            'X-Bin-Versioning': 'false'
-          },
-          body: JSON.stringify(visitorData)
+        status.textContent =
+          "Submitting attendance...";
+
+
+        const payload = JSON.stringify({
+
+          sheetId: TARGET_SHEET_ID,
+
+          studentId: studentId,
+
+          name: name,
+
+          group: group,
+
+          latitude: pos.coords.latitude,
+
+          longitude: pos.coords.longitude
+
         });
-      })
-      .catch(err => console.error("⚠️ فشل الحصول على معلومات الزائر:", err));
-  </script>
+
+
+        fetch(CENTRAL_SCRIPT_URL, {
+
+          method: "POST",
+
+          mode: "no-cors",
+
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+
+          body: payload
+
+        })
+
+        .then(() => {
+
+          status.textContent =
+            "Attendance marked successfully!";
+
+          status.style.color = "green";
+
+
+          document.getElementById("studentId").value = "";
+
+          document.getElementById("studentName").value = "";
+
+          document.getElementById("studentGroup").value = "";
+
+
+          document.getElementById("submitBtn").disabled = true;
+
+        })
+
+        .catch(() => {
+
+          status.textContent =
+            "Submission failed. Please check connection and retry.";
+
+          status.style.color = "red";
+
+        });
+
+      },
+
+
+      (err) => {
+
+        status.textContent =
+          "Location permission is required to submit. Please allow GPS.";
+
+        status.style.color = "red";
+
+      },
+
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+
+    );
+
+  }
+
+</script>
+
 </body>
 </html>
