@@ -1,723 +1,1065 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>Classroom Attendance</title>
 
+
   <!-- QR Code Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+  </script>
+
 
   <style>
+
     * {
       box-sizing: border-box;
     }
 
+
     body {
+
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f7fb;
-      color: #222;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+
       min-height: 100vh;
+
+      display: flex;
+
+      justify-content: center;
+
+      align-items: center;
+
       padding: 20px;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+      background: #f5f7fb;
+
+      color: #1f2937;
+
     }
+
 
     .container {
+
       width: 100%;
+
       max-width: 500px;
+
       background: white;
-      border-radius: 18px;
+
+      border-radius: 20px;
+
       padding: 30px;
-      box-shadow: 0 10px 35px rgba(0,0,0,0.08);
+
+      box-shadow:
+        0 10px 35px rgba(0,0,0,0.08);
+
     }
+
 
     h1 {
+
       text-align: center;
-      margin-top: 0;
-      margin-bottom: 25px;
+
+      margin: 0 0 10px;
+
     }
+
+
+    .subtitle {
+
+      text-align: center;
+
+      color: #6b7280;
+
+      margin-bottom: 25px;
+
+      line-height: 1.5;
+
+    }
+
 
     .field {
+
       margin-bottom: 16px;
+
     }
+
 
     label {
+
       display: block;
+
+      font-weight: 600;
+
       margin-bottom: 7px;
-      font-weight: bold;
+
     }
+
 
     input {
+
       width: 100%;
+
       padding: 13px;
-      border: 1px solid #d5d9e0;
+
+      border: 1px solid #d1d5db;
+
       border-radius: 10px;
+
       font-size: 16px;
+
       outline: none;
+
     }
+
 
     input:focus {
-      border-color: #4285f4;
+
+      border-color: #2563eb;
+
     }
+
 
     button {
+
       width: 100%;
-      padding: 14px;
+
       border: none;
+
       border-radius: 10px;
-      background: #1a73e8;
+
+      padding: 14px;
+
+      background: #2563eb;
+
       color: white;
+
       font-size: 16px;
-      font-weight: bold;
+
+      font-weight: 600;
+
       cursor: pointer;
+
     }
+
 
     button:disabled {
-      background: #9aa0a6;
+
+      background: #9ca3af;
+
       cursor: not-allowed;
+
     }
+
 
     .status {
+
       text-align: center;
+
       margin-top: 18px;
-      font-weight: bold;
+
+      font-weight: 600;
+
       line-height: 1.5;
+
     }
 
-    #teacherView,
-    #studentView {
-      display: none;
-    }
 
     #qrcode {
+
       display: flex;
+
       justify-content: center;
+
       margin-top: 25px;
+
     }
 
-    .info {
-      background: #f1f3f4;
+
+    .qr-url {
+
+      margin-top: 20px;
+
       padding: 12px;
+
+      background: #f3f4f6;
+
       border-radius: 10px;
-      margin-top: 15px;
+
+      font-size: 13px;
+
       word-break: break-all;
-      font-size: 14px;
+
     }
 
-    .location {
-      text-align: center;
-      font-size: 14px;
-      color: #666;
+
+    .location-info {
+
       margin-top: 12px;
+
+      text-align: center;
+
+      font-size: 13px;
+
+      color: #6b7280;
+
+      line-height: 1.5;
+
     }
+
+
+    .hidden {
+
+      display: none !important;
+
+    }
+
   </style>
+
 </head>
+
 
 <body>
 
-  <div class="container">
 
-    <!-- ========================= -->
-    <!-- TEACHER VIEW -->
-    <!-- ========================= -->
+<div class="container">
 
-    <div id="teacherView">
 
-      <h1>Classroom Attendance</h1>
+  <!-- ================================================= -->
+  <!-- TEACHER VIEW -->
+  <!-- ================================================= -->
 
-      <div class="field">
-        <label for="sheetUrl">
-          Google Sheet Link
-        </label>
+  <div id="teacherView">
 
-        <input
-          type="text"
-          id="sheetUrl"
-          placeholder="Paste Google Sheet link"
-        >
-      </div>
 
-      <button id="generateQR">
-        Generate Attendance QR
-      </button>
+    <h1>
+      Teacher Attendance
+    </h1>
 
-      <div id="teacherStatus" class="status"></div>
 
-      <div id="qrcode"></div>
+    <div class="subtitle">
 
-      <div id="qrInfo" class="info" style="display:none;"></div>
+      Enter the Google Sheet link to generate
+      the attendance QR code.
 
     </div>
 
 
-    <!-- ========================= -->
-    <!-- STUDENT VIEW -->
-    <!-- ========================= -->
+    <div class="field">
 
-    <div id="studentView">
-
-      <h1>Classroom Attendance</h1>
-
-      <form id="attendanceForm">
-
-        <div class="field">
-          <label for="studentId">
-            Student ID
-          </label>
-
-          <input
-            type="text"
-            id="studentId"
-            placeholder="Enter your Student ID"
-            required
-          >
-        </div>
+      <label for="sheetUrl">
+        Google Sheet Link
+      </label>
 
 
-        <div class="field">
-          <label for="studentName">
-            Full Name
-          </label>
-
-          <input
-            type="text"
-            id="studentName"
-            placeholder="Enter your full name"
-            required
-          >
-        </div>
-
-
-        <div class="field">
-          <label for="studentGroup">
-            Group Number
-          </label>
-
-          <input
-            type="text"
-            id="studentGroup"
-            placeholder="Enter your group"
-            required
-          >
-        </div>
-
-
-        <button
-          type="submit"
-          id="submitBtn"
-        >
-          Submit Attendance
-        </button>
-
-      </form>
-
-
-      <div class="location">
-        Your location will be used to record GPS coordinates.
-      </div>
-
-      <div
-        id="status"
-        class="status"
-      ></div>
+      <input
+        type="text"
+        id="sheetUrl"
+        placeholder="Paste Google Sheet link"
+        autocomplete="off"
+      >
 
     </div>
+
+
+    <button id="generateQR">
+
+      Generate QR Code
+
+    </button>
+
+
+    <div
+      id="teacherStatus"
+      class="status">
+    </div>
+
+
+    <div id="qrcode"></div>
+
+
+    <div
+      id="qrUrl"
+      class="qr-url hidden">
+    </div>
+
 
   </div>
 
 
+
+  <!-- ================================================= -->
+  <!-- STUDENT VIEW -->
+  <!-- ================================================= -->
+
+  <div
+    id="studentView"
+    class="hidden">
+
+
+    <h1>
+      Classroom Attendance
+    </h1>
+
+
+    <div class="subtitle">
+
+      Enter your information to mark attendance.
+
+    </div>
+
+
+    <form id="attendanceForm">
+
+
+      <div class="field">
+
+        <label for="studentId">
+          Student ID
+        </label>
+
+
+        <input
+          type="text"
+          id="studentId"
+          placeholder="Enter Student ID"
+          autocomplete="off"
+          required
+        >
+
+      </div>
+
+
+
+      <div class="field">
+
+        <label for="studentName">
+          Full Name
+        </label>
+
+
+        <input
+          type="text"
+          id="studentName"
+          placeholder="Enter Full Name"
+          autocomplete="name"
+          required
+        >
+
+      </div>
+
+
+
+      <div class="field">
+
+        <label for="studentGroup">
+          Group Number
+        </label>
+
+
+        <input
+          type="text"
+          id="studentGroup"
+          placeholder="Enter Group Number"
+          autocomplete="off"
+          required
+        >
+
+      </div>
+
+
+
+      <button
+        id="submitBtn"
+        type="submit">
+
+        Submit Attendance
+
+      </button>
+
+
+    </form>
+
+
+    <div class="location-info">
+
+      Your GPS location will be recorded with your attendance.
+
+    </div>
+
+
+    <div
+      id="status"
+      class="status">
+    </div>
+
+
+  </div>
+
+
+</div>
+
+
+
 <script>
 
-  // ============================================================
-  // CONFIGURATION
-  // ============================================================
 
-  // NEW Google Apps Script Web App
-  const CENTRAL_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbw6b0LsRN3gOVVNpSnhhVq7DuArL7M0s6SIJL5gNAJswuPP0mxHV6jrzGdE8L9b-mpGbg/exec";
+// ============================================================
+// CONFIGURATION
+// ============================================================
 
 
-  // NEW Google Sheet ID
-  const TARGET_SHEET_ID =
-    "1q3cRSBwjVNN49CrT9cOS63Pf9i2ML8ldFxUgw3lg37s";
+// NEW GOOGLE APPS SCRIPT WEB APP
+
+const CENTRAL_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbxKkAoHIJxUJQbLh3VVYW8IQZTjBAfDg9XwEX-clz6eOacG3_iLacCg5CuqQqmojUfYqA/exec";
 
 
-  // ============================================================
-  // GET URL PARAMETERS
-  // ============================================================
+// NEW GOOGLE SHEET ID
 
-  const urlParams = new URLSearchParams(window.location.search);
-
-  const sheetIdFromURL =
-    urlParams.get("sheetId");
+const TARGET_SHEET_ID =
+  "1q3cRSBwjVNN49CrT9cOS63Pf9i2ML8ldFxUgw3lg37s";
 
 
-  // ============================================================
-  // ELEMENTS
-  // ============================================================
+// ============================================================
+// READ URL
+// ============================================================
 
-  const teacherView =
-    document.getElementById("teacherView");
-
-  const studentView =
-    document.getElementById("studentView");
-
-
-  // ============================================================
-  // TEACHER / STUDENT MODE
-  // ============================================================
-
-  if (!sheetIdFromURL) {
-
-    // No sheetId in URL
-    // Show teacher view
-
-    teacherView.style.display = "block";
-
-  } else {
-
-    // sheetId exists
-    // Show student view
-
-    studentView.style.display = "block";
-
-  }
+const urlParams =
+  new URLSearchParams(
+    window.location.search
+  );
 
 
-  // ============================================================
-  // TEACHER: GENERATE QR CODE
-  // ============================================================
-
-  const generateQRButton =
-    document.getElementById("generateQR");
+const sheetIdFromQR =
+  urlParams.get("sheetId");
 
 
-  if (generateQRButton) {
+// ============================================================
+// GET ELEMENTS
+// ============================================================
 
-    generateQRButton.addEventListener(
-      "click",
-      function () {
-
-        const sheetUrl =
-          document.getElementById("sheetUrl").value.trim();
-
-        const teacherStatus =
-          document.getElementById("teacherStatus");
-
-        const qrContainer =
-          document.getElementById("qrcode");
-
-        const qrInfo =
-          document.getElementById("qrInfo");
+const teacherView =
+  document.getElementById(
+    "teacherView"
+  );
 
 
-        // Check if link exists
-        if (!sheetUrl) {
-
-          teacherStatus.textContent =
-            "Please paste the Google Sheet link.";
-
-          teacherStatus.style.color = "red";
-
-          return;
-        }
+const studentView =
+  document.getElementById(
+    "studentView"
+  );
 
 
-        // Extract Google Sheet ID
-        const match =
-          sheetUrl.match(
-            /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/
-          );
+// ============================================================
+// CHOOSE PAGE
+// ============================================================
 
 
-        if (!match) {
+// If there is NO sheetId
+// show teacher page
 
-          teacherStatus.textContent =
-            "Invalid Google Sheet link.";
+if (!sheetIdFromQR) {
 
-          teacherStatus.style.color = "red";
+  teacherView.classList.remove(
+    "hidden"
+  );
 
-          return;
-        }
-
-
-        const sheetId =
-          match[1];
+}
 
 
-        // Build student URL
-        const studentURL =
-          window.location.origin +
-          window.location.pathname +
-          "?sheetId=" +
-          encodeURIComponent(sheetId);
+// If there IS sheetId
+// show student page
+
+else {
+
+  teacherView.classList.add(
+    "hidden"
+  );
+
+  studentView.classList.remove(
+    "hidden"
+  );
+
+}
 
 
-        // Clear previous QR
-        qrContainer.innerHTML = "";
+// ============================================================
+// TEACHER - GENERATE QR CODE
+// ============================================================
+
+const generateQRButton =
+  document.getElementById(
+    "generateQR"
+  );
 
 
-        // Generate QR
-        new QRCode(
-          qrContainer,
-          {
-            text: studentURL,
-            width: 250,
-            height: 250
-          }
+if (generateQRButton) {
+
+
+  generateQRButton.addEventListener(
+    "click",
+    function () {
+
+
+      const sheetUrl =
+        document
+          .getElementById("sheetUrl")
+          .value
+          .trim();
+
+
+      const teacherStatus =
+        document.getElementById(
+          "teacherStatus"
         );
 
 
+      const qrContainer =
+        document.getElementById(
+          "qrcode"
+        );
+
+
+      const qrUrl =
+        document.getElementById(
+          "qrUrl"
+        );
+
+
+      // ------------------------------------------
+      // CHECK SHEET LINK
+      // ------------------------------------------
+
+      if (!sheetUrl) {
+
         teacherStatus.textContent =
-          "QR code generated successfully.";
+          "Please paste the Google Sheet link.";
 
         teacherStatus.style.color =
-          "green";
+          "red";
 
-
-        qrInfo.style.display =
-          "block";
-
-        qrInfo.textContent =
-          studentURL;
+        return;
 
       }
-    );
-
-  }
 
 
-  // ============================================================
-  // STUDENT ATTENDANCE
-  // ============================================================
+      // ------------------------------------------
+      // GET SHEET ID
+      // ------------------------------------------
 
-  const attendanceForm =
-    document.getElementById("attendanceForm");
-
-
-  if (attendanceForm) {
-
-    attendanceForm.addEventListener(
-      "submit",
-      function (event) {
-
-        event.preventDefault();
+      const match =
+        sheetUrl.match(
+          /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/
+        );
 
 
-        const studentId =
-          document.getElementById("studentId")
-          .value
-          .trim();
+      if (!match) {
+
+        teacherStatus.textContent =
+          "Invalid Google Sheet link.";
+
+        teacherStatus.style.color =
+          "red";
+
+        return;
+
+      }
 
 
-        const name =
-          document.getElementById("studentName")
-          .value
-          .trim();
+      const enteredSheetId =
+        match[1];
 
 
-        const group =
-          document.getElementById("studentGroup")
-          .value
-          .trim();
+      // ------------------------------------------
+      // CREATE STUDENT URL
+      // ------------------------------------------
+
+      const studentURL =
+        window.location.origin +
+        window.location.pathname +
+        "?sheetId=" +
+        encodeURIComponent(
+          enteredSheetId
+        );
 
 
-        const status =
-          document.getElementById("status");
+      // ------------------------------------------
+      // REMOVE OLD QR
+      // ------------------------------------------
+
+      qrContainer.innerHTML = "";
 
 
-        const submitBtn =
-          document.getElementById("submitBtn");
+      // ------------------------------------------
+      // GENERATE NEW QR
+      // ------------------------------------------
 
+      new QRCode(
+        qrContainer,
+        {
 
-        // Basic validation
-        if (!studentId || !name || !group) {
+          text:
+            studentURL,
 
-          status.textContent =
-            "Please fill in all fields.";
+          width:
+            250,
 
-          status.style.color =
-            "red";
+          height:
+            250
 
-          return;
         }
+      );
 
 
-        // Disable button
-        submitBtn.disabled =
-          true;
+      teacherStatus.textContent =
+        "QR code generated successfully.";
 
-        submitBtn.textContent =
-          "Getting location...";
+      teacherStatus.style.color =
+        "green";
 
+
+      // Show generated URL
+
+      qrUrl.classList.remove(
+        "hidden"
+      );
+
+
+      qrUrl.textContent =
+        studentURL;
+
+
+    }
+  );
+
+}
+
+
+// ============================================================
+// STUDENT - ATTENDANCE
+// ============================================================
+
+const attendanceForm =
+  document.getElementById(
+    "attendanceForm"
+  );
+
+
+if (attendanceForm) {
+
+
+  attendanceForm.addEventListener(
+    "submit",
+    function (event) {
+
+
+      event.preventDefault();
+
+
+      // ------------------------------------------
+      // GET FORM VALUES
+      // ------------------------------------------
+
+      const studentId =
+        document
+          .getElementById("studentId")
+          .value
+          .trim();
+
+
+      const name =
+        document
+          .getElementById("studentName")
+          .value
+          .trim();
+
+
+      const group =
+        document
+          .getElementById("studentGroup")
+          .value
+          .trim();
+
+
+      const status =
+        document.getElementById(
+          "status"
+        );
+
+
+      const submitBtn =
+        document.getElementById(
+          "submitBtn"
+        );
+
+
+      // ------------------------------------------
+      // VALIDATE
+      // ------------------------------------------
+
+      if (
+        !studentId ||
+        !name ||
+        !group
+      ) {
 
         status.textContent =
-          "Please allow location access.";
+          "Please fill in all fields.";
 
         status.style.color =
-          "#555";
+          "red";
+
+        return;
+
+      }
 
 
-        // ======================================================
-        // GET GPS LOCATION
-        // ======================================================
+      // ------------------------------------------
+      // DISABLE BUTTON
+      // ------------------------------------------
 
-        if (!navigator.geolocation) {
+      submitBtn.disabled =
+        true;
+
+
+      submitBtn.textContent =
+        "Getting location...";
+
+
+      status.textContent =
+        "Please allow location access.";
+
+      status.style.color =
+        "#555";
+
+
+      // ------------------------------------------
+      // CHECK GEOLOCATION
+      // ------------------------------------------
+
+      if (!navigator.geolocation) {
+
+        status.textContent =
+          "Geolocation is not supported on this device.";
+
+        status.style.color =
+          "red";
+
+
+        submitBtn.disabled =
+          false;
+
+
+        submitBtn.textContent =
+          "Submit Attendance";
+
+
+        return;
+
+      }
+
+
+      // ------------------------------------------
+      // GET LOCATION
+      // ------------------------------------------
+
+      navigator.geolocation.getCurrentPosition(
+
+        function (position) {
+
+
+          const latitude =
+            position.coords.latitude;
+
+
+          const longitude =
+            position.coords.longitude;
+
+
+          const accuracy =
+            position.coords.accuracy;
+
+
+          console.log(
+            "GPS:",
+            latitude,
+            longitude,
+            accuracy
+          );
+
+
+          // ----------------------------------------
+          // CREATE DATA
+          // ----------------------------------------
+
+          const payload = {
+
+            sheetId:
+              TARGET_SHEET_ID,
+
+            studentId:
+              studentId,
+
+            name:
+              name,
+
+            group:
+              group,
+
+            latitude:
+              latitude,
+
+            longitude:
+              longitude,
+
+            accuracy:
+              accuracy
+
+          };
+
+
+          console.log(
+            "Attendance payload:",
+            payload
+          );
+
+
+          submitBtn.textContent =
+            "Submitting...";
+
 
           status.textContent =
-            "Geolocation is not supported by this device.";
+            "Sending attendance...";
+
+          status.style.color =
+            "#555";
+
+
+          // ----------------------------------------
+          // SEND TO APPS SCRIPT
+          // ----------------------------------------
+
+          fetch(
+            CENTRAL_SCRIPT_URL,
+            {
+
+              method:
+                "POST",
+
+              mode:
+                "no-cors",
+
+              headers: {
+
+                "Content-Type":
+                  "application/x-www-form-urlencoded"
+
+              },
+
+              body:
+                JSON.stringify(
+                  payload
+                )
+
+            }
+          )
+
+          .then(
+            function () {
+
+
+              /*
+                no-cors means the browser
+                cannot read the response
+                from Apps Script.
+
+                The request itself has
+                been sent successfully
+                from the browser.
+              */
+
+
+              status.textContent =
+                "Attendance submitted successfully!";
+
+              status.style.color =
+                "green";
+
+
+              submitBtn.textContent =
+                "Attendance Submitted";
+
+
+              // Clear form
+
+              document
+                .getElementById(
+                  "studentId"
+                )
+                .value = "";
+
+
+              document
+                .getElementById(
+                  "studentName"
+                )
+                .value = "";
+
+
+              document
+                .getElementById(
+                  "studentGroup"
+                )
+                .value = "";
+
+
+            }
+          )
+
+          .catch(
+            function (error) {
+
+
+              console.error(
+                "Attendance error:",
+                error
+              );
+
+
+              status.textContent =
+                "Could not submit attendance. Please try again.";
+
+              status.style.color =
+                "red";
+
+
+              submitBtn.disabled =
+                false;
+
+
+              submitBtn.textContent =
+                "Submit Attendance";
+
+
+            }
+          );
+
+
+        },
+
+
+        // ==========================================
+        // GPS ERROR
+        // ==========================================
+
+        function (error) {
+
+
+          console.error(
+            "GPS error:",
+            error
+          );
+
+
+          let message =
+            "Could not get your location.";
+
+
+          if (
+            error.code === 1
+          ) {
+
+            message =
+              "Location permission was denied.";
+
+          }
+
+
+          else if (
+            error.code === 2
+          ) {
+
+            message =
+              "Your location could not be determined.";
+
+          }
+
+
+          else if (
+            error.code === 3
+          ) {
+
+            message =
+              "Location request timed out.";
+
+          }
+
+
+          status.textContent =
+            message;
+
 
           status.style.color =
             "red";
+
 
           submitBtn.disabled =
             false;
 
+
           submitBtn.textContent =
             "Submit Attendance";
 
-          return;
+
+        },
+
+
+        // ==========================================
+        // GPS SETTINGS
+        // ==========================================
+
+        {
+
+          enableHighAccuracy:
+            true,
+
+          timeout:
+            15000,
+
+          maximumAge:
+            0
+
         }
 
+      );
 
-        navigator.geolocation.getCurrentPosition(
 
-          function (position) {
+    }
+  );
 
-            const latitude =
-              position.coords.latitude;
-
-
-            const longitude =
-              position.coords.longitude;
-
-
-            // ==================================================
-            // CREATE PAYLOAD
-            // ==================================================
-
-            const payload = {
-
-              sheetId:
-                TARGET_SHEET_ID,
-
-              studentId:
-                studentId,
-
-              name:
-                name,
-
-              group:
-                group,
-
-              latitude:
-                latitude,
-
-              longitude:
-                longitude
-
-            };
-
-
-            // ==================================================
-            // SEND TO GOOGLE APPS SCRIPT
-            // ==================================================
-
-            submitBtn.textContent =
-              "Submitting...";
-
-
-            status.textContent =
-              "Sending attendance...";
-
-            status.style.color =
-              "#555";
-
-
-            fetch(
-              CENTRAL_SCRIPT_URL,
-              {
-                method: "POST",
-
-                headers: {
-                  "Content-Type":
-                    "text/plain;charset=utf-8"
-                },
-
-                body:
-                  JSON.stringify(payload)
-              }
-            )
-
-            .then(
-              function (response) {
-
-                return response.json();
-
-              }
-            )
-
-            .then(
-              function (result) {
-
-                console.log(
-                  "Apps Script response:",
-                  result
-                );
-
-
-                if (result.success) {
-
-                  status.textContent =
-                    "Attendance marked successfully!";
-
-                  status.style.color =
-                    "green";
-
-
-                  // Clear form
-                  document.getElementById(
-                    "studentId"
-                  ).value = "";
-
-
-                  document.getElementById(
-                    "studentName"
-                  ).value = "";
-
-
-                  document.getElementById(
-                    "studentGroup"
-                  ).value = "";
-
-
-                  submitBtn.textContent =
-                    "Attendance Submitted";
-
-
-                } else {
-
-                  status.textContent =
-                    result.message ||
-                    "Attendance submission failed.";
-
-                  status.style.color =
-                    "red";
-
-
-                  submitBtn.disabled =
-                    false;
-
-                  submitBtn.textContent =
-                    "Submit Attendance";
-
-                }
-
-              }
-            )
-
-            .catch(
-              function (error) {
-
-                console.error(
-                  "Attendance error:",
-                  error
-                );
-
-
-                status.textContent =
-                  "Could not submit attendance. Please try again.";
-
-                status.style.color =
-                  "red";
-
-
-                submitBtn.disabled =
-                  false;
-
-                submitBtn.textContent =
-                  "Submit Attendance";
-
-              }
-            );
-
-          },
-
-
-          // ==================================================
-          // GPS ERROR
-          // ==================================================
-
-          function (error) {
-
-            console.error(
-              "GPS Error:",
-              error
-            );
-
-
-            let message =
-              "Could not get your location.";
-
-
-            if (error.code === 1) {
-
-              message =
-                "Location permission was denied.";
-
-            } else if (error.code === 2) {
-
-              message =
-                "Your location could not be determined.";
-
-            } else if (error.code === 3) {
-
-              message =
-                "Location request timed out.";
-
-            }
-
-
-            status.textContent =
-              message;
-
-            status.style.color =
-              "red";
-
-
-            submitBtn.disabled =
-              false;
-
-            submitBtn.textContent =
-              "Submit Attendance";
-
-          },
-
-
-          // ==================================================
-          // GPS OPTIONS
-          // ==================================================
-
-          {
-            enableHighAccuracy: true,
-
-            timeout: 10000,
-
-            maximumAge: 0
-          }
-
-        );
-
-      }
-    );
-
-  }
+}
 
 </script>
 
+
 </body>
+
 </html>
